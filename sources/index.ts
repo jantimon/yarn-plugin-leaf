@@ -1,10 +1,10 @@
 import type { Plugin, Project, Workspace } from "@yarnpkg/core";
 import { execute } from "@yarnpkg/shell";
 import {
-  LeafActivateCommand,
   LeafCommand,
-  LeafDisableCommand,
 } from "./commands/Leaf";
+import { LeafActivateCommand } from "./commands/LeafActivate";
+import { LeafDisableCommand } from "./commands/LeafDisable";
 import { findWorkspaceLeafs } from "./utils/findLeafs";
 
 const projectTasks = new WeakMap<Project, Array<Promise<string[]>>>();
@@ -13,11 +13,6 @@ const plugin: Plugin = {
   commands: [LeafCommand, LeafActivateCommand, LeafDisableCommand],
   hooks: {
     validateWorkspace(workspace: Workspace) {
-      // Get the raw package.json
-      const { optionalWorkspaces } = workspace.manifest.raw;
-      if (!optionalWorkspaces || !Array.isArray(optionalWorkspaces)) {
-        return;
-      }
       // Keep a task list for the current project
       const tasksFromCache = projectTasks.get(workspace.project);
       const tasks = tasksFromCache || [];

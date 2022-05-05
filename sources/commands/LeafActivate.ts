@@ -5,23 +5,25 @@ import {
   MessageName,
   Project, StreamReport
 } from "@yarnpkg/core";
-import { Command, Usage } from "clipanion";
+import { execute } from "@yarnpkg/shell";
+import { Command, Option, Usage } from "clipanion";
 import { findWorkspaceLeafs } from "../utils/findLeafs";
 
-export class LeafCommand extends BaseCommand {
-  static paths = [[`leaf`]];
+export class LeafActivateCommand extends BaseCommand {
+  static paths = [[`leaf`, `activate`]];
 
   static usage: Usage = Command.Usage({
-    description: "leaf workspace modules",
+    description: "install leaf workspace modules",
     details: `
       This command allows to install modules which are excluded from the ordinary installation.
     `,
     examples: [
       ["Activate a leaf workspace", "yarn leaf activate @tools/git-hooks"],
-      ["Disable a leaf workspace", "yarn leaf disable @tools/git-hooks"],
-      ["View all leaf workspaces", "yarn leaf"],
     ],
   });
+
+  patterns = Option.Rest();
+
   async execute() {
     const configuration = await Configuration.find(
       this.context.cwd,
@@ -38,25 +40,35 @@ export class LeafCommand extends BaseCommand {
 
     const report = await StreamReport.start(
       { configuration, stdout: this.context.stdout },
-      async (report) => {
-        const leafs = await findWorkspaceLeafs(workspace);
-        report.reportInfo(
+      async () => {}
+    );
+
+    const availableLeafs = await findWorkspaceLeafs(workspace);
+    await Promise.all(this.patterns.map(async (leafName) => {
+      const leaf = availableLeafs.find((availableLeaf) => availableLeaf.manifest.name.name === leafName);
+      if (!leaf) {
+        report.reportError(
           MessageName.UNNAMED,
-          `Found ${leafs.length} leaf module${leafs.length === 1 ? "" : "s"}.`
-        );
-        report.reportInfo(
-          MessageName.UNNAMED,
-          formatUtils.prettyList(
+          formatUtils.pretty(
             configuration,
-            leafs.map(
-              (leaf) =>
-                `${leaf.hasNodeModules ? "✔" : "𐄂"} ${leaf.manifest.name.name}`
-            ),
-            "green"
+            `Could not find leaf '${leafName}'`,
+            "red"
           )
         );
+        return;
       }
-    );
+      if (!leaf.hasNodeModules) {
+        await execute("yarn", [], { cwd: leaf.absolutePath });
+      }
+      report.reportInfo(
+        MessageName.UNNAMED,
+        formatUtils.pretty(
+          configuration,
+          `leaf '${leafName}' has been activated`,
+          "green"
+        )
+      )
+    }));
 
     return report.exitCode();
   }
