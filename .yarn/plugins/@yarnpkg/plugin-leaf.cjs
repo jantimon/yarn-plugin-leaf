@@ -1,2 +1,11 @@
 /* eslint-disable */
-module.exports = require("../../../bundles/@yarnpkg/plugin-leaf");
+try {
+    module.exports = require("../../../bundles/@yarnpkg/plugin-leaf");
+} catch(e) {
+    module.exports = {
+        name: "@yarnpkg/plugin-leaf",
+        factory: function (require) {
+            return {}
+        }
+    }
+}

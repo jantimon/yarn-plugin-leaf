@@ -3,7 +3,8 @@ import {
   Configuration,
   formatUtils,
   MessageName,
-  Project, StreamReport
+  Project,
+  StreamReport,
 } from "@yarnpkg/core";
 import { execute } from "@yarnpkg/shell";
 import { Command, Option, Usage } from "clipanion";
@@ -44,31 +45,35 @@ export class LeafActivateCommand extends BaseCommand {
     );
 
     const availableLeafs = await findWorkspaceLeafs(workspace);
-    await Promise.all(this.patterns.map(async (leafName) => {
-      const leaf = availableLeafs.find((availableLeaf) => availableLeaf.manifest.name.name === leafName);
-      if (!leaf) {
-        report.reportError(
+    await Promise.all(
+      this.patterns.map(async (leafName) => {
+        const leaf = availableLeafs.find(
+          (availableLeaf) => availableLeaf.manifest.name.name === leafName
+        );
+        if (!leaf) {
+          report.reportError(
+            MessageName.UNNAMED,
+            formatUtils.pretty(
+              configuration,
+              `Could not find leaf '${leafName}'`,
+              "red"
+            )
+          );
+          return;
+        }
+        if (!leaf.hasNodeModules) {
+          await execute("yarn", [], { cwd: leaf.absolutePath });
+        }
+        report.reportInfo(
           MessageName.UNNAMED,
           formatUtils.pretty(
             configuration,
-            `Could not find leaf '${leafName}'`,
-            "red"
+            `leaf '${leafName}' has been activated`,
+            "green"
           )
         );
-        return;
-      }
-      if (!leaf.hasNodeModules) {
-        await execute("yarn", [], { cwd: leaf.absolutePath });
-      }
-      report.reportInfo(
-        MessageName.UNNAMED,
-        formatUtils.pretty(
-          configuration,
-          `leaf '${leafName}' has been activated`,
-          "green"
-        )
-      )
-    }));
+      })
+    );
 
     return report.exitCode();
   }

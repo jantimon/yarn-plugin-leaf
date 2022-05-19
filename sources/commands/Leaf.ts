@@ -3,7 +3,8 @@ import {
   Configuration,
   formatUtils,
   MessageName,
-  Project, StreamReport
+  Project,
+  StreamReport,
 } from "@yarnpkg/core";
 import { Command, Usage } from "clipanion";
 import { findWorkspaceLeafs } from "../utils/findLeafs";
@@ -40,21 +41,51 @@ export class LeafCommand extends BaseCommand {
       { configuration, stdout: this.context.stdout },
       async (report) => {
         const leafs = await findWorkspaceLeafs(workspace);
-        report.reportInfo(
-          MessageName.UNNAMED,
-          `Found ${leafs.length} leaf module${leafs.length === 1 ? "" : "s"}.`
+        const leafCount = leafs.length;
+        const activeLeafs = leafs.filter(
+          ({ hasNodeModules }) => hasNodeModules
         );
-        report.reportInfo(
-          MessageName.UNNAMED,
-          formatUtils.prettyList(
-            configuration,
-            leafs.map(
-              (leaf) =>
-                `${leaf.hasNodeModules ? "✔" : "𐄂"} ${leaf.manifest.name.name}`
-            ),
-            "green"
-          )
+        const inactiveLeafs = leafs.filter(
+          ({ hasNodeModules }) => !hasNodeModules
         );
+        const { Cross, Check } = formatUtils.mark(configuration);
+        const writeln = (msg: string) =>
+          report.reportInfo(MessageName.UNNAMED, msg);
+
+        writeln(
+          `This workspace contains ${leafCount} leaf module${
+            leafCount === 1 ? "" : "s"
+          }.`
+        );
+        writeln("");
+        if (activeLeafs.length) {
+          const activeLeafCount = activeLeafs.length;
+          writeln(
+            `The following ${
+              activeLeafCount === 1
+                ? "leaf module is"
+                : activeLeafCount + " leaf modules are"
+            } active:`
+          );
+          activeLeafs.forEach((leaf) =>
+            writeln(`${Check} ${leaf.manifest.name.name}`)
+          );
+          writeln("");
+        }
+        if (inactiveLeafs.length) {
+          const inactiveLeafCount = inactiveLeafs.length;
+          writeln(
+            `The following ${
+              inactiveLeafCount === 1
+                ? "leaf module is"
+                : inactiveLeafCount + " leaf modules are"
+            } inactive:`
+          );
+          inactiveLeafs.forEach((leaf) =>
+            writeln(`${Cross} ${leaf.manifest.name.name}`)
+          );
+          writeln("");
+        }
       }
     );
 

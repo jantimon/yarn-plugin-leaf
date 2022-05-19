@@ -2,10 +2,11 @@
 
 Yarn has a powerful workspace feature which installs all workspace modules together.
 
-`yarn-plugin-leaf` adds `leaf` modules which are not installed by default.
+The `yarn-plugin-leaf` plugin adds `leaf` modules. Leaf modules are standalone
+modules with a standalone package.json and yarn.lock file.
 
-Each leaf has to be activated by hand.  
-All active leafs will be updated automatically on ever `yarn` run.
+In contrast to workspace modules leaf modules and all of their dependencies are only 
+installed on demand.
 
 ## Installation
 
@@ -26,16 +27,27 @@ yarn plugin import https://raw.githubusercontent.com/jantimon/yarn-plugin-leaf/m
 
 ## Usage
 
-list all available leaf modules:
+Activate a leaf module and install all it's dependencies:
 
 ```
-yarn leaf
+  yarn leaf activate my-special-package
 ```
 
-```
-yarn leaf activate my-special-package
-```
+Disable a leaf module and uninstall all it's dependencies:
 
 ```
-yarn leaf disable my-special-package
+  yarn leaf disable my-special-package
+```
+
+Updates of all active leaf modules will run automatically
+during your normal yarn install run
+
+```
+  yarn
+```
+
+
+Update the `yarn leaf` module:
+```
+  yarn plugin import https://raw.githubusercontent.com/jantimon/yarn-plugin-leaf/main/bundles/%40yarnpkg/plugin-leaf.js
 ```

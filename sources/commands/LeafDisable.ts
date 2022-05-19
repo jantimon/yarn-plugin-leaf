@@ -3,7 +3,8 @@ import {
   Configuration,
   formatUtils,
   MessageName,
-  Project, StreamReport
+  Project,
+  StreamReport,
 } from "@yarnpkg/core";
 import { PortablePath, ppath, xfs } from "@yarnpkg/fslib";
 import { Command, Option, Usage } from "clipanion";
@@ -44,34 +45,38 @@ export class LeafDisableCommand extends BaseCommand {
     );
 
     const availableLeafs = await findWorkspaceLeafs(workspace);
-    await Promise.all(this.patterns.map(async (leafName) => {
-      const leaf = availableLeafs.find((availableLeaf) => availableLeaf.manifest.name.name === leafName);
-      if (!leaf) {
-        report.reportError(
+    await Promise.all(
+      this.patterns.map(async (leafName) => {
+        const leaf = availableLeafs.find(
+          (availableLeaf) => availableLeaf.manifest.name.name === leafName
+        );
+        if (!leaf) {
+          report.reportError(
+            MessageName.UNNAMED,
+            formatUtils.pretty(
+              configuration,
+              `Could not find leaf '${leafName}'`,
+              "red"
+            )
+          );
+          return;
+        }
+        if (leaf.hasNodeModules) {
+          await xfs.removePromise(
+            ppath.join(leaf.absolutePath, "node_modules" as PortablePath),
+            { recursive: true }
+          );
+        }
+        report.reportInfo(
           MessageName.UNNAMED,
           formatUtils.pretty(
             configuration,
-            `Could not find leaf '${leafName}'`,
-            "red"
+            `leaf '${leafName}' has been disabled`,
+            "green"
           )
         );
-        return;
-      }
-      if (leaf.hasNodeModules) {
-        await xfs.removePromise(
-          ppath.join(leaf.absolutePath, "node_modules" as PortablePath),
-          { recursive: true }
-        );
-      }
-      report.reportInfo(
-        MessageName.UNNAMED,
-        formatUtils.pretty(
-          configuration,
-          `leaf '${leafName}' has been disabled`,
-          "green"
-        )
-      )
-    }));
+      })
+    );
 
     return report.exitCode();
   }
